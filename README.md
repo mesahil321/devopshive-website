@@ -5,12 +5,14 @@ The primary goal of this project is to build a complete CI/CD pipeline that auto
 
 ## 2. Technology Stack
 This project will utilize the following technologies to meet the client's requirements:
+
 | Category | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Cloud Provider** | Amazon Web Services (AWS) | To host all infrastructure resources. |
-| **Infrastructure as Code** | Terraform | To provision and manage all AWS resources. |
-| **Containerization** | Docker | To package the website into a portable and consistent unit. |
-| **Configuration Mgmt** | Ansible | To automate the deployment of the Docker container to servers. |
+| **Infrastructure as Code** | Terraform | To provision and manage all AWS resources, including the EKS cluster. |
+| **Containerization** | Docker | To package the website into a portable and consistent container image. |
+| **Container Orchestration**| Kubernetes (AWS EKS) | To automate the deployment, scaling, and management of the containerized application. |
+| **Configuration Mgmt** | Ansible | To perform initial setup or configuration on cluster nodes if needed. |
 | **CI/CD Orchestration** | Jenkins | To automate the build, test, and deployment pipeline. |
 | **Version Control** | Git / GitHub | To store and manage all code for the project. |
 
