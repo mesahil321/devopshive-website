@@ -33,4 +33,4 @@ The repository is organized into the following directories to separate concerns:
 ## 4. Getting Started
 To begin working on the project, clone the repository to your local machine:
 ```bash
-git clone [https://github.com/DarkSim-source/DevOpsHive.git](https://github.com/DarkSim-source/DevOpsHive.git)
+git clone https://github.com/DarkSim-source/DevOpsHive.git
