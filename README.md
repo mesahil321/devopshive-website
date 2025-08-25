@@ -18,12 +18,19 @@ This project will utilize the following technologies to meet the client's requir
 The repository is organized into the following directories to separate concerns:
 
 infrastructure/     # Contains all infrastructure definitions
+
 terraform/      # Terraform code for AWS resources
+
 ansible/        # Ansible playbooks for deployment
+
 ci-cd/              # CI/CD pipeline configurations
+
   ci-cd/jenkins/        # Jenkinsfile for pipeline orchestration
+  
 wordpress/          # Application-specific files (will be a simple dummy site)
+
   wordpress/docker/         # Dockerfile to build the application container
+  
 docs/               # Project documentation and diagrams
 
 ## 4. Getting Started
