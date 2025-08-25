@@ -1,26 +1,96 @@
-@import "tailwindcss";
+/* src/app/globals.css */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
+/* Reset and base styles */
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #fffbee;
+  color: #333;
   font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* Center container vertically and horizontally */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Wrap title, bees, and rainbow */
+.title-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Rainbow GIF overlay */
+.rainbow {
+  position: absolute;
+  top: 110px;           /* Adjust to sit above the title */
+  left: 55%;
+  transform: translateX(-50%);
+  width: 460px;         /* Adjust size as needed */
+  height: auto;
+  pointer-events: none; /* So it doesn’t block clicks */
+  z-index: 1;
+}
+
+/* Title styling */
+.title {
+  position: relative;
+  font-size: 4rem;
+  color: #f4a261;
+  margin: 0;
+  padding: 2rem 3rem;
+  background: #fffbee;  
+  border-radius: 0.5rem;
+  z-index: 2;           /* Sit above the rainbow’s bottom area */
+}
+
+/* Base bee style */
+.bee-img {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  animation: float 4s ease-in-out infinite;
+  z-index: 3;           /* Bees sit above everything */
+}
+
+/* Individual animation delays and positions */
+.bee-img.top-left {
+  top: -20px;
+  left: -20px;
+  animation-delay: 0s;
+}
+
+.bee-img.top-right {
+  top: -20px;
+  right: -20px;
+  animation-delay: 1s;
+}
+
+.bee-img.bottom-left {
+  bottom: -20px;
+  left: -20px;
+  animation-delay: 2s;
+}
+
+.bee-img.bottom-right {
+  bottom: -20px;
+  right: -20px;
+  animation-delay: 3s;
+}
+
+/* Float keyframes: subtle circular motion */
+@keyframes float {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(5px, -5px); }
+  50%  { transform: translate(0, -10px); }
+  75%  { transform: translate(-5px, -5px); }
+  100% { transform: translate(0, 0); }
 }
