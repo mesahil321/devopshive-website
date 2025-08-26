@@ -29,7 +29,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t devopsgive/website ./devopsgive-website
+          docker build -t devopshive/website ./devopshive-website
 
       # Optional: Push Docker image to Docker Hub or GHCR
       # - name: Log in to Docker Hub
