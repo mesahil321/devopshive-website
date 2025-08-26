@@ -3,7 +3,7 @@ name: Build and Deploy to AWS Fargate
 on:
   push:
     branches:
-      - main
+      - feature/deployment-pipeline
 
 jobs:
   build-and-deploy:
