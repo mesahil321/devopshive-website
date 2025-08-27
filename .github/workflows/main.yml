@@ -14,27 +14,31 @@ jobs:
       contents: read
 
     steps:
-      # 1. Checkout the repo
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      # 2. Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      # 3. Install dependencies
       - name: Install Dependencies
         working-directory: ./devopshive-website
         run: npm ci
 
-      # 4. Build Next.js app
       - name: Build Next.js App
         working-directory: ./devopshive-website
         run: npm run build
 
-      # 5. Configure AWS credentials
+      - name: Prepare Docker Build Context
+        run: |
+          mkdir docker-build
+          cp -r ./devopshive-website/.next docker-build/
+          cp -r ./devopshive-website/public docker-build/
+          cp -r ./devopshive-website/node_modules docker-build/
+          cp ./devopshive-website/package.json docker-build/
+          cp ./devopshive-website/next.config.js docker-build/ || true
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -42,21 +46,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 6. Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # 7. Terraform Init
       - name: Terraform Init
         run: terraform init
         working-directory: ./terraform
 
-      # 8. Import ECR repo if it exists
       - name: Import ECR Repo
         run: terraform import aws_ecr_repository.app devopshive-website || true
         working-directory: ./terraform
 
-      # 9. Ensure ECR repository exists
       - name: Ensure ECR repository exists
         run: |
           aws ecr describe-repositories --repository-names devopshive-website || \
@@ -66,17 +66,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
-      # 10. Import ECS resources if they exist & apply Terraform
-      - name: Import ECS resources and Apply Terraform
+      - name: Apply Terraform
         working-directory: ./terraform
         run: |
-          # Import ECS cluster if it exists
-          if aws ecs describe-clusters --clusters devopshive-cluster --query "clusters[0].status" --output text 2>/dev/null | grep -q "ACTIVE"; then
-            echo "Importing existing ECS cluster..."
-            terraform import aws_ecs_cluster.main devopshive-cluster
-          fi
-
-          # Import ECS service if it exists
+          # Only import ECS service if it already exists
           if aws ecs describe-services --cluster devopshive-cluster --services devopshive-service --query "services[0].status" --output text 2>/dev/null | grep -q "ACTIVE"; then
             echo "Importing existing ECS service..."
             terraform import aws_ecs_service.app devopshive-cluster/devopshive-service || true
@@ -85,7 +78,6 @@ jobs:
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
 
-      # 11. Get Terraform outputs
       - name: Get Terraform Outputs
         id: tf_outputs
         run: |
@@ -93,20 +85,18 @@ jobs:
           echo "ECR_URL=$(terraform output -raw ecr_repo_url)" >> $GITHUB_ENV
         working-directory: ./terraform
 
-      # 12. Login to ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # 13. Build and push Docker image directly from website folder
       - name: Build and Push Docker Image to ECR
         run: |
           IMAGE_TAG=${GITHUB_SHA}
-          # Build the Docker image from website folder
+          # Build the Docker image
           docker build -t ${{ steps.login-ecr.outputs.registry }}/devopshive-website:$IMAGE_TAG -f ./devopshive-website/Dockerfile ./devopshive-website
-          # Push commit-specific tag
+          # Push the commit-specific tag
           docker push ${{ steps.login-ecr.outputs.registry }}/devopshive-website:$IMAGE_TAG
           # Tag as latest
           docker tag ${{ steps.login-ecr.outputs.registry }}/devopshive-website:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/devopshive-website:latest
-          # Push latest
+          # Push latest tag
           docker push ${{ steps.login-ecr.outputs.registry }}/devopshive-website:latest
