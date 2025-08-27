@@ -53,6 +53,22 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
+        # Step: Check if ECS cluster already exists
+      - name: Check if ECS cluster exists
+        id: check_cluster
+        run: |
+          if aws ecs describe-clusters --clusters devopshive-cluster --query "clusters[0].status" --output text | grep -q "ACTIVE"; then
+            echo "CLUSTER_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "CLUSTER_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      # Step: Import ECS cluster if it exists
+      - name: Import ECS cluster if exists
+        if: env.CLUSTER_EXISTS == 'true'
+        working-directory: ./terraform
+        run: terraform import aws_ecs_cluster.main devopshive-cluster
+
       - name: Terraform Apply (Create ECS cluster, Fargate infra)
         run: terraform apply -auto-approve
         working-directory: ./terraform

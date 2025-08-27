@@ -60,7 +60,7 @@ resource "aws_ecr_repository" "app" {
 }
 
 resource "aws_ecs_cluster" "main" {
-  name = var.ecs_cluster_name
+  name = "devopshive-cluster"
 }
 
 resource "aws_iam_role" "ecs_task_execution" {
