@@ -44,8 +44,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: eu-west-1
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -54,25 +53,37 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
-        # Step: Check if ECS cluster already exists
-      - name: Check if ECS cluster exists
-        id: check_cluster
+      - name: Import ECR Repo
+        run: terraform import aws_ecr_repository.app devopshive-website || true
+        working-directory: ./terraform
+
+      - name: Ensure ECR repository exists
         run: |
-          if aws ecs describe-clusters --clusters devopshive-cluster --query "clusters[0].status" --output text | grep -q "ACTIVE"; then
-            echo "CLUSTER_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "CLUSTER_EXISTS=false" >> $GITHUB_ENV
+          aws ecr describe-repositories --repository-names devopshive-website || \
+          aws ecr create-repository --repository-name devopshive-website
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+        # Step: Check if ECS cluster and service already exist
+      - name: Import ECS resources and Apply Terraform
+        working-directory: ./terraform
+        run: |
+          # Import ECS cluster if it exists
+          if aws ecs describe-clusters --clusters devopshive-cluster --query "clusters[0].status" --output text 2>/dev/null | grep -q "ACTIVE"; then
+            echo "Importing existing ECS cluster..."
+            terraform import aws_ecs_cluster.main devopshive-cluster
           fi
 
-      # Step: Import ECS cluster if it exists
-      - name: Import ECS cluster if exists
-        if: env.CLUSTER_EXISTS == 'true'
-        working-directory: ./terraform
-        run: terraform import aws_ecs_cluster.main devopshive-cluster
+          # Import ECS service if it exists
+          if aws ecs describe-services --cluster devopshive-cluster --services devopshive-service --query "services[0].status" --output text 2>/dev/null | grep -q "ACTIVE"; then
+            echo "Importing existing ECS service..."
+            terraform import aws_ecs_service.app devopshive-cluster/devopshive-service || true
+          fi
 
-      - name: Terraform Apply (Create ECS cluster, Fargate infra)
-        run: terraform apply -auto-approve
-        working-directory: ./terraform
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
 
       - name: Get Terraform Outputs
         id: tf_outputs
@@ -85,14 +96,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, Tag, and Push Docker Image to ECR
-        env:
-          ECR_URL: ${{ env.ECR_URL }}
+      - name: Build and Push Docker Image to ECR
         run: |
           IMAGE_TAG=${GITHUB_SHA}
-          docker build -t $ECR_URL:$IMAGE_TAG docker-build
-          docker push $ECR_URL:$IMAGE_TAG
-
-
-          docker tag $ECR_URL:$IMAGE_TAG $ECR_URL:latest
-          docker push $ECR_URL:latest
+          # Build the Docker image
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/devopshive-website:$IMAGE_TAG -f ./devopshive-website/Dockerfile ./devopshive-website
+          # Push the commit-specific tag
+          docker push ${{ steps.login-ecr.outputs.registry }}/devopshive-website:$IMAGE_TAG
+          # Tag as latest
+          docker tag ${{ steps.login-ecr.outputs.registry }}/devopshive-website:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/devopshive-website:latest
+          # Push latest tag
+          docker push ${{ steps.login-ecr.outputs.registry }}/devopshive-website:latest
