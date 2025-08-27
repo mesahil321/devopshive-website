@@ -64,23 +64,18 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole"
+  name_prefix = "ecsTaskExecutionRole-"  # Terraform appends a unique suffix
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
       Principal = {
         Service = "ecs-tasks.amazonaws.com"
       }
     }]
   })
-    lifecycle {
-    create_before_destroy = true
-    prevent_destroy       = false
-    ignore_changes        = [name]
-  }
 }
 
 
