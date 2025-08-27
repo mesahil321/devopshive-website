@@ -76,7 +76,13 @@ resource "aws_iam_role" "ecs_task_execution" {
       }
     }]
   })
+    lifecycle {
+    create_before_destroy = true
+    prevent_destroy       = false
+    ignore_changes        = [name]
+  }
 }
+
 
 resource "aws_iam_role_policy_attachment" "ecs_execution_attach" {
   role       = aws_iam_role.ecs_task_execution.name
